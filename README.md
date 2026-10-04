@@ -1,3 +1,5 @@
+## [打开反馈演示](https://jasonzh116.github.io/mhw-feedback-demo/)
+
 # MHW synthetic feedback demo
 
 A 120-second synthetic browser replay generated through the MHW v0.2 simulation and feedback pipeline at 150 Hz, sampled into displayed records at 10 Hz. This public repository contains only browser assets and synthetic participant-feedback records. No real participant data, Python package, PCA implementation, or trained models are included.
