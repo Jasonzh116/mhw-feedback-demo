@@ -3,6 +3,13 @@
  const $=id=>document.getElementById(id);let records=null,scenario='continuous',position=0,playing=true,last=0,symptomaticSide='right';
  let displayedIndex=-1,displayedSide=null;
  const messages={warming_up:'正在收集信号…',unavailable:'信号暂不可用',hidden:'保持已练习的跑姿',paused:'训练已暂停',finished:'本次训练已结束'};
+ function formatError(error){
+  // Preserve the inclusive boundary visually: 3.02 must not look like an in-range 3.0.
+  let digits=1;
+  while(Math.abs(error)>3&&Number(Math.abs(error).toFixed(digits))===3&&digits<12)digits++;
+  if(Math.abs(error)>3&&Number(Math.abs(error).toFixed(digits))===3)return error>0?'>+3°':'<−3°';
+  return (error>0?'+':'')+error.toFixed(digits)+'°';
+ }
  function renderFeet(error,abnormal=false){
   const valid=Number.isFinite(error)&&['left','right'].includes(symptomaticSide);
   const large=valid&&Math.abs(error)>3?(error>0?symptomaticSide:(symptomaticSide==='left'?'right':'left')):null;
@@ -29,7 +36,7 @@
   if(!visible){renderFeet(null,abnormal);$('cursor').style.transform='rotate(0deg)';$('value').textContent='—';$('direction').textContent='';$('message').textContent=data.state==='anomaly'?'数据异常':messages[data.state]||'信号暂不可用';return;}
   const error=data.error_deg,good=Math.abs(error)<=3;renderFeet(error);
   $('message').textContent=good?'保持':'向绿色目标区调整';
-  $('value').textContent=(error>0?'+':'')+error.toFixed(1)+'°';$('value').className='value '+(good?'good':'outside');
+  $('value').textContent=formatError(error);$('value').className='value '+(good?'good':'outside');
   // Arc geometry follows the actual larger side, while E retains its symptom-minus-opposite sign.
   const anatomicalError=error*(symptomaticSide==='right'?1:-1);
   $('cursor').style.transform='rotate('+(Math.max(-12,Math.min(12,anatomicalError))*7.5)+'deg)';
