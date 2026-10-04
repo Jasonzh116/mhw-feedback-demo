@@ -3,12 +3,12 @@
  const $=id=>document.getElementById(id);let records=null,scenario='continuous',position=0,playing=true,last=0,symptomaticSide='right';
  const messages={warming_up:'正在收集信号…',unavailable:'信号暂不可用',hidden:'保持已练习的跑姿',paused:'训练已暂停',finished:'本次训练已结束'};
  const hint='前 10 秒收集信号；随后持续缓慢波动，目标范围为 −3° 至 +3°。55–57 秒与 96–98 秒演示合成异常标记。';
- function renderFeet(error){
+ function renderFeet(error,abnormal=false){
   const valid=Number.isFinite(error),large=valid&&error!==0?(error>0?symptomaticSide:(symptomaticSide==='left'?'right':'left')):null;
   const amount=valid?Math.min(Math.abs(error),12)/12*0.25:0;
   for(const side of ['left','right']){
    const active=side===large;
-   $('foot-'+side).className='foot'+(active?' emphasized':'');
+   $('foot-'+side).className='foot'+(abnormal?' anomaly':active?' emphasized':'');
    $('foot-'+side).style.setProperty('--foot-scale',active?1+amount:1);
    $('role-'+side).textContent=side===symptomaticSide?'症状侧':'对侧';
   }
@@ -19,8 +19,8 @@
   $('message').className=abnormal?'anomaly':'';
   document.body.classList.toggle('anomaly-active',abnormal);
   const visible=['in_target','outside_target'].includes(data.state)&&Number.isFinite(data.error_deg);
-  $('feedback-panel').hidden=!visible;
-  if(!visible){renderFeet(null);$('cursor').style.left='50%';$('value').textContent='—';$('direction').textContent='';$('message').textContent=data.state==='anomaly'?'数据异常，反馈暂停（模拟标记）':messages[data.state]||'信号暂不可用';return;}
+  $('feedback-panel').hidden=!(visible||abnormal);
+  if(!visible){renderFeet(null,abnormal);$('cursor').style.left='50%';$('value').textContent='—';$('direction').textContent='';$('message').textContent=data.state==='anomaly'?'数据异常':messages[data.state]||'信号暂不可用';return;}
   const error=data.error_deg,good=error>=-3&&error<=3;renderFeet(error);
   $('message').textContent=good?'保持在绿色目标区':'进入绿色目标区';
   $('value').textContent=(error>0?'+':'')+error.toFixed(1)+'°';$('value').className='value '+(good?'good':'outside');

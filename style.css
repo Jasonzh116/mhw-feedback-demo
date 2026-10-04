@@ -8,4 +8,6 @@
 @media(min-width:601px) and (max-height:800px){.foot-art{height:135px}.foot svg{height:108px;width:65px}.feet{margin-bottom:6px}.value{font-size:64px}.foot-heading{margin:5px 0}.foot strong{font-size:18px}.scale{height:38px}}
 
 /* Steady synthetic quality alert: no flashing or animation. */
-body.anomaly-active{background:#2b1018}#message.anomaly{background:#991b1b;color:#fff;border-radius:14px;padding:24px 14px;border:2px solid #7f1d1d}
+#message.anomaly{color:#f08b8b;font-size:18px;background:none;border:0;padding:0;min-height:1.4em}
+.foot.anomaly .foot-shape{fill:#db6268;stroke:#f2a1a5}
+body.anomaly-active #feedback-panel>.caption,body.anomaly-active #feedback-panel>.value,body.anomaly-active #feedback-panel>.sign-key,body.anomaly-active #feedback-panel>.scale,body.anomaly-active #feedback-panel>.ticks,body.anomaly-active #feedback-panel>.direction{visibility:hidden}
