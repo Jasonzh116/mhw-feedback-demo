@@ -16,6 +16,9 @@
   $('target-center').setAttribute('class','center-region'+(valid&&Math.abs(error)<=3?' active':''));
   for(const side of ['left','right']){
    const active=side===large;
+   // A categorical cue around the fixed silhouette center, never a measured foot angle.
+   $('orientation-'+side).setAttribute('transform','rotate('+(active?(side==='left'?-45:45):0)+')');
+   $('sign-'+side).textContent=['left','right'].includes(symptomaticSide)?(side===symptomaticSide?'+':'−'):'';
    $('foot-'+side).setAttribute('class','foot'+(active?' emphasized':''));
    $('role-'+side).textContent=side===symptomaticSide?'症状侧':'对侧';
    $('role-'+side).setAttribute('class','role'+(side===symptomaticSide?' symptom':''));
