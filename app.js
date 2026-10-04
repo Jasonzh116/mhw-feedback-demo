@@ -1,8 +1,9 @@
 'use strict';
 (()=>{
  const $=id=>document.getElementById(id);let records=null,scenario='continuous',position=0,playing=true,last=0,symptomaticSide='right';
+ let heldFeedback=null,displaySecond=-1;
  const messages={warming_up:'正在收集信号…',unavailable:'信号暂不可用',hidden:'保持已练习的跑姿',paused:'训练已暂停',finished:'本次训练已结束'};
- const hint='前 10 秒收集信号；随后持续缓慢波动，目标范围为 −3° 至 +3°。55–57 秒与 96–98 秒演示合成异常标记。';
+ const hint='前 10 秒收集信号；随后反馈每秒更新一次，目标范围为 −3° 至 +3°。55–57 秒与 96–98 秒演示合成异常标记。';
  function renderFeet(error,abnormal=false){
   const valid=Number.isFinite(error),large=valid&&error!==0?(error>0?symptomaticSide:(symptomaticSide==='left'?'right':'left')):null;
   const amount=valid?Math.min(Math.abs(error),12)/12*0.25:0;
@@ -14,6 +15,7 @@
   }
  }
  function render(data){
+  data=data||{state:'unavailable',error_deg:null};
   const abnormal=data.state==='anomaly'||(data.synthetic_quality_flag===true&&data.state!=='hidden');
   if(abnormal)data={state:'anomaly',error_deg:null};
   $('message').className=abnormal?'anomaly':'';
@@ -28,13 +30,24 @@
   const largeSide=error>0?symptomaticSide:(symptomaticSide==='left'?'right':'left');
   $('direction').textContent=error===0?'两侧 MHW 相等':(largeSide==='left'?'左脚':'右脚')+'（'+(error>0?'症状侧':'对侧')+'）MHW 更大'+(good?' · 已在目标区':'');
  }
- function show(){if(!records)return;const i=Math.min(1200,Math.floor(position));render(records[scenario][i]);$('seek').value=i;$('time').textContent=(i/10).toFixed(1)+' / 120.0 秒';$('hint').textContent=hint;$('play').textContent=playing?'暂停':position>=1200?'再播放':'继续';$('connection').textContent=position>=1200?'模拟回放已结束':playing?'模拟回放中 · 1×':'模拟回放已暂停';}
+ // Evaluate safety at every replay snapshot; only normal feedback is sampled at 1 Hz.
+ function feedbackAt(i,reset=false){
+  const current=records[scenario][i]||{state:'unavailable',error_deg:null};
+  const normal=['in_target','outside_target'].includes(current.state)&&Number.isFinite(current.error_deg)&&current.synthetic_quality_flag!==true;
+  const second=Math.floor(i/10);
+  if(!normal){heldFeedback=null;displaySecond=-1;return current;}
+  // Recovery and explicit seeking use fresh data, never a pre-alert held value.
+  if(reset||!heldFeedback||second!==displaySecond){heldFeedback={...current};displaySecond=second;}
+  return heldFeedback;
+ }
+ function show(reset=false){if(!records)return;const i=Math.min(1200,Math.floor(position));render(feedbackAt(i,reset));$('seek').value=i;$('time').textContent=(i/10).toFixed(1)+' / 120.0 秒';$('hint').textContent=hint;$('play').textContent=playing?'暂停':position>=1200?'再播放':'继续';$('connection').textContent=position>=1200?'模拟回放已结束':playing?'模拟回放中 · 1×':'模拟回放已暂停';}
  $('symptomatic-side').onchange=()=>{symptomaticSide=$('symptomatic-side').value;show();};
- $('play').onclick=()=>{if(!records)return;if(position>=1200)position=0;playing=!playing;last=performance.now();show();};
- $('restart').onclick=()=>{position=0;playing=true;last=performance.now();show();};
- $('seek').oninput=()=>{position=Number($('seek').value);last=performance.now();show();};
+ $('play').onclick=()=>{if(!records)return;if(position>=1200){position=0;heldFeedback=null;displaySecond=-1;}playing=!playing;last=performance.now();show();};
+ $('restart').onclick=()=>{position=0;playing=true;last=performance.now();show(true);};
+ $('seek').oninput=()=>{position=Number($('seek').value);last=performance.now();show(true);};
  $('fullscreen').onclick=()=>{if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});};
  function tick(now){if(last&&playing&&records&&!document.hidden){position=Math.min(1200,position+(now-last)/100);if(position>=1200)playing=false;show();}last=now;requestAnimationFrame(tick);}
  document.addEventListener('visibilitychange',()=>{last=performance.now();});
  fetch('./records.json?v=continuous-2').then(r=>{if(!r.ok)throw Error('load');return r.json();}).then(d=>{records=d;show();requestAnimationFrame(tick);}).catch(()=>{$('message').textContent='模拟记录载入失败，请刷新页面';$('connection').textContent='尚未开始';$('play').disabled=true;});
 })();
+
