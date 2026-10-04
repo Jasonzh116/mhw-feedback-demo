@@ -8,4 +8,4 @@
 @media(min-width:601px) and (max-height:800px){.foot-art{height:135px}.foot svg{height:108px;width:65px}.feet{margin-bottom:6px}.value{font-size:64px}.foot-heading{margin:5px 0}.foot strong{font-size:18px}.scale{height:38px}}
 
 /* Steady synthetic quality alert: no flashing or animation. */
-body.anomaly-active{background:#fff1f2}#message.anomaly{background:#991b1b;color:#fff;border-radius:14px;padding:24px 14px;border:2px solid #7f1d1d}
+body.anomaly-active{background:#2b1018}#message.anomaly{background:#991b1b;color:#fff;border-radius:14px;padding:24px 14px;border:2px solid #7f1d1d}
