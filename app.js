@@ -2,6 +2,28 @@
 (()=>{
  const $=id=>document.getElementById(id);let records=null,scenario='continuous',position=0,playing=true,last=0,symptomaticSide='right';
  let displayedIndex=-1,displayedSide=null;
+ const MOTION_MS=80;
+ const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+ let motion=null,visual=null;
+ function paintVisual(v){
+  visual={...v};
+  $('cursor').style.transform='rotate('+v.cursor+'deg)';
+ }
+ function settleMotion(){if(motion)paintVisual(motion.to);motion=null;}
+ function resetVisual(){motion=null;visual=null;paintVisual({cursor:0});visual=null;}
+ function moveVisual(to,snap){
+  if(snap||reducedMotion.matches||!visual){motion=null;paintVisual(to);return;}
+  // Retarget the last actually rendered pose, never queue or interpolate event data.
+  motion={from:{...visual},to,start:performance.now()};
+ }
+ function animateVisual(now){
+  if(!motion)return;
+  const progress=Math.min(1,Math.max(0,(now-motion.start)/MOTION_MS));
+  const ease=progress*progress*(3-2*progress),v={};
+  for(const key of ['cursor'])v[key]=motion.from[key]+(motion.to[key]-motion.from[key])*ease;
+  paintVisual(v);if(progress===1)motion=null;
+ }
+ reducedMotion.addEventListener('change',()=>{if(reducedMotion.matches)settleMotion();});
  const messages={warming_up:'正在收集信号…',unavailable:'信号暂不可用',hidden:'保持已练习的跑姿',paused:'训练已暂停',finished:'本次训练已结束'};
  function formatError(error){
   // Preserve the inclusive boundary visually: 3.02 must not look like an in-range 3.0.
@@ -23,7 +45,7 @@
    $('sector-'+side).setAttribute('class','arc-sector '+side+(active?' active':''));
   }
  }
- function render(data){
+ function render(data,snap=false){
   data=data||{state:'unavailable',error_deg:null};
   const abnormal=data.state==='anomaly'||(data.synthetic_quality_flag===true&&data.state!=='hidden');
   if(abnormal)data={state:'anomaly',error_deg:null};
@@ -34,13 +56,13 @@
   $('gauge').hidden=false;
   $('value').hidden=!visible;
   $('cursor').style.visibility=visible?'visible':'hidden';
-  if(!visible){renderFeet(null,abnormal);$('cursor').style.transform='rotate(0deg)';$('value').textContent='—';$('direction').textContent='';$('message').textContent=data.state==='anomaly'?'数据异常':messages[data.state]||'信号暂不可用';return;}
+  if(!visible){renderFeet(null,abnormal);resetVisual();$('value').textContent='—';$('direction').textContent='';$('message').textContent=data.state==='anomaly'?'数据异常':messages[data.state]||'信号暂不可用';return;}
   const error=data.error_deg,good=Math.abs(error)<=3;renderFeet(error);
   $('message').textContent='';
   $('value').textContent=formatError(error);$('value').className='value '+(good?'good':'outside');
   // Arc geometry follows the actual larger side, while E retains its symptom-minus-opposite sign.
   const anatomicalError=error*(symptomaticSide==='right'?1:-1);
-  $('cursor').style.transform='rotate('+(Math.max(-12,Math.min(12,anatomicalError))*7.5)+'deg)';
+  moveVisual({cursor:Math.max(-12,Math.min(12,anatomicalError))*7.5},snap);
   const largeSide=error>0?symptomaticSide:(symptomaticSide==='left'?'right':'left');
   $('direction').textContent=good?'已在目标区内':(largeSide==='left'?'左侧':'右侧')+'偏大';
  }
@@ -58,7 +80,7 @@
    const row=records[scenario][index];
    const normal=row&&['in_target','outside_target'].includes(row.state);
    const eligible=normal&&row.available_s>=10&&row.counts&&Math.min(row.counts.L,row.counts.R)>=5;
-   render(normal&&!eligible?{state:'unavailable',error_deg:null}:row);
+   render(normal&&!eligible?{state:'unavailable',error_deg:null}:row,reset||symptomaticSide!==displayedSide||!playing);
    $('feedback-panel').dataset.eventId=row?.new_valid_excursions?.map(e=>e.id).join(',')||row?.update_kind||'';
    $('feedback-panel').dataset.availableS=String(row?.available_s??'');
    displayedIndex=index;displayedSide=symptomaticSide;
@@ -68,13 +90,13 @@
   $('connection').textContent=position>=1200?'模拟回放已结束':playing?'模拟回放中 · 1×':'模拟回放已暂停';
  }
  $('symptomatic-side').onchange=()=>{symptomaticSide=$('symptomatic-side').value;show();};
- $('play').onclick=()=>{if(!records)return;if(position>=1200){position=0;displayedIndex=-1;}playing=!playing;last=performance.now();show();};
+ $('play').onclick=()=>{if(!records)return;if(position>=1200){position=0;displayedIndex=-1;}playing=!playing;settleMotion();last=performance.now();show();};
  $('restart').onclick=()=>{position=0;playing=true;last=performance.now();show(true);};
  $('seek').oninput=()=>{position=Number($('seek').value);last=performance.now();show(true);};
  $('fullscreen').onclick=()=>{if(document.fullscreenElement){document.exitFullscreen?.().catch(()=>{});}else if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});};
  document.addEventListener('fullscreenchange',()=>{$('fullscreen').textContent=document.fullscreenElement?'退出全屏':'全屏';});
- function tick(now){if(last&&playing&&records&&!document.hidden){position=Math.min(1200,position+(now-last)/100);if(position>=1200)playing=false;show();}last=now;requestAnimationFrame(tick);}
- document.addEventListener('visibilitychange',()=>{last=performance.now();});
+ function tick(now){if(last&&playing&&records&&!document.hidden){position=Math.min(1200,position+(now-last)/100);if(position>=1200)playing=false;show();}if(!document.hidden)animateVisual(now);last=now;requestAnimationFrame(tick);}
+ document.addEventListener('visibilitychange',()=>{last=performance.now();if(document.hidden){render({state:'hidden',error_deg:null},true);displayedIndex=-1;}else show(true);});
  fetch('./records.json?v=irregular-arc-1').then(r=>{if(!r.ok)throw Error('load');return r.json();}).then(d=>{records=d;show();requestAnimationFrame(tick);}).catch(()=>{$('message').textContent='模拟记录载入失败，请刷新页面';$('connection').textContent='尚未开始';$('play').disabled=true;});
 })();
 
