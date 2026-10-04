@@ -20,8 +20,6 @@
    $('orientation-'+side).setAttribute('transform','rotate('+(active?(side==='left'?-45:45):0)+')');
    $('sign-'+side).textContent=['left','right'].includes(symptomaticSide)?(side===symptomaticSide?'+':'−'):'';
    $('foot-'+side).setAttribute('class','foot'+(active?' emphasized':''));
-   $('role-'+side).textContent=side===symptomaticSide?'症状侧':'对侧';
-   $('role-'+side).setAttribute('class','role'+(side===symptomaticSide?' symptom':''));
    $('sector-'+side).setAttribute('class','arc-sector '+side+(active?' active':''));
   }
  }
