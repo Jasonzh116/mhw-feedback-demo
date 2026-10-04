@@ -13,13 +13,12 @@
  function renderFeet(error,abnormal=false){
   const valid=Number.isFinite(error)&&['left','right'].includes(symptomaticSide);
   const large=valid&&Math.abs(error)>3?(error>0?symptomaticSide:(symptomaticSide==='left'?'right':'left')):null;
-  $('target-center').className='center-region'+(valid&&Math.abs(error)<=3?' active':'');
+  $('target-center').setAttribute('class','center-region'+(valid&&Math.abs(error)<=3?' active':''));
   for(const side of ['left','right']){
    const active=side===large;
-   $('foot-'+side).className='foot'+(abnormal?' anomaly':active?' emphasized':'');
+   $('foot-'+side).setAttribute('class','foot'+(active?' emphasized':''));
    $('role-'+side).textContent=side===symptomaticSide?'症状侧':'对侧';
-   $('role-'+side).className='role'+(side===symptomaticSide?' symptom':'');
-   $('cue-'+side).textContent=active?'↑ '+(side==='left'?'左侧':'右侧')+'偏大':'';
+   $('role-'+side).setAttribute('class','role'+(side===symptomaticSide?' symptom':''));
    $('sector-'+side).setAttribute('class','arc-sector '+side+(active?' active':''));
   }
  }
@@ -31,11 +30,12 @@
   document.body.classList.toggle('anomaly-active',abnormal);
   const visible=['in_target','outside_target'].includes(data.state)&&Number.isFinite(data.error_deg)&&['left','right'].includes(symptomaticSide);
   $('feedback-panel').hidden=!(visible||abnormal);
-  $('gauge').hidden=!visible;
+  $('gauge').hidden=false;
+  $('value').hidden=!visible;
   $('cursor').style.visibility=visible?'visible':'hidden';
   if(!visible){renderFeet(null,abnormal);$('cursor').style.transform='rotate(0deg)';$('value').textContent='—';$('direction').textContent='';$('message').textContent=data.state==='anomaly'?'数据异常':messages[data.state]||'信号暂不可用';return;}
   const error=data.error_deg,good=Math.abs(error)<=3;renderFeet(error);
-  $('message').textContent=good?'保持':'向绿色目标区调整';
+  $('message').textContent='';
   $('value').textContent=formatError(error);$('value').className='value '+(good?'good':'outside');
   // Arc geometry follows the actual larger side, while E retains its symptom-minus-opposite sign.
   const anatomicalError=error*(symptomaticSide==='right'?1:-1);
@@ -70,7 +70,8 @@
  $('play').onclick=()=>{if(!records)return;if(position>=1200){position=0;displayedIndex=-1;}playing=!playing;last=performance.now();show();};
  $('restart').onclick=()=>{position=0;playing=true;last=performance.now();show(true);};
  $('seek').oninput=()=>{position=Number($('seek').value);last=performance.now();show(true);};
- $('fullscreen').onclick=()=>{if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});};
+ $('fullscreen').onclick=()=>{if(document.fullscreenElement){document.exitFullscreen?.().catch(()=>{});}else if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});};
+ document.addEventListener('fullscreenchange',()=>{$('fullscreen').textContent=document.fullscreenElement?'退出全屏':'全屏';});
  function tick(now){if(last&&playing&&records&&!document.hidden){position=Math.min(1200,position+(now-last)/100);if(position>=1200)playing=false;show();}last=now;requestAnimationFrame(tick);}
  document.addEventListener('visibilitychange',()=>{last=performance.now();});
  fetch('./records.json?v=irregular-arc-1').then(r=>{if(!r.ok)throw Error('load');return r.json();}).then(d=>{records=d;show();requestAnimationFrame(tick);}).catch(()=>{$('message').textContent='模拟记录载入失败，请刷新页面';$('connection').textContent='尚未开始';$('play').disabled=true;});
