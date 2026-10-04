@@ -3,7 +3,6 @@
  const $=id=>document.getElementById(id);let records=null,scenario='continuous',position=0,playing=true,last=0,symptomaticSide='right';
  let displayedIndex=-1,displayedSide=null;
  const messages={warming_up:'正在收集信号…',unavailable:'信号暂不可用',hidden:'保持已练习的跑姿',paused:'训练已暂停',finished:'本次训练已结束'};
- const hint='前 10 秒收集信号；随后每出现一个新的有效 MHW 幅度即更新（两侧各至少 5 个），目标范围为 −3° 至 +3°。55–57 秒与 96–98 秒演示合成异常标记。';
  function renderFeet(error,abnormal=false){
   const valid=Number.isFinite(error),large=valid&&error!==0?(error>0?symptomaticSide:(symptomaticSide==='left'?'right':'left')):null;
   const amount=valid?Math.min(Math.abs(error),12)/12*0.25:0;
@@ -49,7 +48,7 @@
    $('feedback-panel').dataset.availableS=String(row?.available_s??'');
    displayedIndex=index;displayedSide=symptomaticSide;
   }
-  $('seek').value=Math.floor(position);$('time').textContent=t.toFixed(1)+' / 120.0 秒';$('hint').textContent=hint;
+  $('seek').value=Math.floor(position);$('time').textContent=t.toFixed(1)+' / 120.0 秒';
   $('play').textContent=playing?'暂停':position>=1200?'再播放':'继续';
   $('connection').textContent=position>=1200?'模拟回放已结束':playing?'模拟回放中 · 1×':'模拟回放已暂停';
  }
@@ -62,4 +61,5 @@
  document.addEventListener('visibilitychange',()=>{last=performance.now();});
  fetch('./records.json?v=excursion-events-1').then(r=>{if(!r.ok)throw Error('load');return r.json();}).then(d=>{records=d;show();requestAnimationFrame(tick);}).catch(()=>{$('message').textContent='模拟记录载入失败，请刷新页面';$('connection').textContent='尚未开始';$('play').disabled=true;});
 })();
+
 
