@@ -1,0 +1,10 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="MHW v0.2 云端模拟反馈演示。仅使用合成数据回放，不连接采集设备。"><title>MHW 云端模拟反馈</title><link rel="stylesheet" href="./style.css"></head><body><main>
+<header><span>MHW 跑步反馈</span><span class="badge">云端模拟回放</span></header>
+<p class="notice">合成数据演示 · 未连接采集设备 · 临床实时模式已禁用</p>
+<section class="controls" aria-label="模拟回放控制"><label>演示场景<select id="scenario"><option value="converging">逐渐进入目标区</option><option value="dropout">信号丢失与恢复</option><option value="stable">持续超出目标区</option><option value="zero">有效零值</option><option value="hidden">不显示反馈（对照组）</option></select></label><div class="buttons"><button id="play" type="button">暂停</button><button id="restart" type="button">重新开始</button></div></section>
+<div id="message" role="status" aria-live="polite">正在载入模拟记录…</div>
+<section id="feedback-panel" hidden aria-label="内侧幅度差反馈"><p class="caption">症状侧 − 对侧</p><div id="value" class="value">—</div><div class="scale" aria-hidden="true"><div class="target"><span>目标区</span></div><div class="zero"></div><div id="cursor" class="cursor"></div></div><div class="ticks"><span>−12°</span><span>−3°</span><span>+3°</span><span>+12°</span></div><p id="direction" class="direction"></p></section>
+<div class="timeline"><label for="seek">模拟时间 <output id="time">0.0 / 120.0 秒</output></label><input id="seek" type="range" min="0" max="1200" step="1" value="0" aria-label="模拟时间"><p id="hint">前 10 秒收集信号，随后显示反馈；目标范围为 −3° 至 +3°。</p></div>
+<footer><span id="connection">模拟记录载入中</span><button id="fullscreen" type="button">全屏显示</button></footer>
+<details><summary>数据与演示说明</summary><p>数值由已有 v0.2 软件的合成三维标记点、因果滤波与反馈计算管线生成，再在此页面按时间回放。默认展示 120 秒的“逐渐进入目标区”场景，每 0.1 秒读取一个模拟快照。</p><p>这是浏览器模拟记录回放，不是 Nokov 实时数据流，也不证明硬件延迟、PCA 检测器或临床有效性。“暂停”只暂停演示；拖动时间条可查看不同反馈状态。</p><p>“信号丢失与恢复”在 11–14 秒隐藏数值；“不显示反馈”使用原有对照组规则。隐藏或无效状态不会保留上一次数值。</p></details>
+</main><script src="./app.js"></script></body></html>
