@@ -1,0 +1,45 @@
+name: GRA GaitDynamics environment probe
+on:
+  push:
+    branches:
+      - research/gaitdynamics-pfj-20261014
+    paths:
+      - .github/workflows/gra-gaitdynamics-probe.yml
+      - research/gaitdynamics/**
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Python and system
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python --version
+          python -c "import sys,platform;print(sys.executable,platform.platform())"
+          git lfs --version
+          df -h .
+          free -h
+          python - <<'PY'
+          for mod in ('torch','numpy','scipy','pandas','nimblephysics','accelerate','einops'):
+              try:
+                  m=__import__(mod); print('AVAILABLE',mod,getattr(m,'__version__','?'))
+              except Exception as e: print('MISSING',mod,repr(e))
+          PY
+      - name: Check official download endpoints
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for url in \
+            https://huggingface.co/spaces/alanttan/GaitDynamics/resolve/main/example_mot_complete_kinematics.mot \
+            https://huggingface.co/spaces/alanttan/GaitDynamics/resolve/main/GaitDynamicsRefinement.pt \
+            https://raw.githubusercontent.com/stanfordnmbl/GaitDynamics/main/example_usage/gait_dynamics.py; do
+            curl --retry 2 --connect-timeout 20 --max-time 40 -L -I "$url" | grep -Ei 'HTTP/|content-length:|location:' | tail -8 || true
+          done
+      - name: Check physics package installability
+        shell: bash
+        run: |
+          python -m pip index versions nimblephysics 2>&1 | head -12 || true
